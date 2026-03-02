@@ -1,6 +1,6 @@
-﻿import { useMemo, useState } from 'react'
+﻿import { useMemo, useState, useEffect } from 'react'
 import GrantCard from '../components/GrantCard'
-import { grants } from '../data/mockData'
+import { grants as mockGrants } from '../data/mockData'
 
 export default function GrantsPage() {
   const [search, setSearch] = useState('')
@@ -8,12 +8,39 @@ export default function GrantsPage() {
   const [category, setCategory] = useState('All')
   const [range, setRange] = useState('All')
   const [page, setPage] = useState(1)
+  const [backendGrants, setBackendGrants] = useState([])
 
-  const categories = useMemo(() => ['All', ...new Set(grants.map((grant) => grant.category))], [])
+  useEffect(() => {
+    const fetchGrants = async () => {
+      try {
+        const response = await fetch('http://localhost:3001/api/grants')
+        if (response.ok) {
+          const data = await response.json()
+          // Map backend fields to frontend expected fields if necessary
+          const formatted = data.map(g => ({
+            ...g,
+            projectName: g.title, // Map 'title' from backend to 'projectName' for GrantCard
+            sponsor: g.sponsorWallet, // Map 'sponsorWallet' to 'sponsor'
+            completion: 0, // Default for new grants
+            status: 'Active' // Default
+          }))
+          setBackendGrants(formatted)
+        }
+      } catch (error) {
+        console.error('Error fetching grants:', error)
+      }
+    }
+    fetchGrants()
+  }, [])
+
+  const allGrants = useMemo(() => [...backendGrants, ...mockGrants], [backendGrants])
+
+  const categories = useMemo(() => ['All', ...new Set(allGrants.map((grant) => grant.category))], [allGrants])
 
   const filtered = useMemo(() => {
-    return grants.filter((grant) => {
-      const bySearch = grant.projectName.toLowerCase().includes(search.toLowerCase()) || grant.sponsor.toLowerCase().includes(search.toLowerCase())
+    return allGrants.filter((grant) => {
+      const bySearch = (grant.projectName || '').toLowerCase().includes(search.toLowerCase()) ||
+        (grant.sponsor || '').toLowerCase().includes(search.toLowerCase())
       const byStatus = status === 'All' || grant.status === status
       const byCategory = category === 'All' || grant.category === category
       const byRange =
@@ -24,7 +51,7 @@ export default function GrantsPage() {
 
       return bySearch && byStatus && byCategory && byRange
     })
-  }, [search, status, category, range])
+  }, [search, status, category, range, allGrants])
 
   const pageSize = 6
   const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize))

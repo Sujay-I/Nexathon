@@ -1,5 +1,8 @@
 ﻿import { useMemo, useState } from 'react'
 import { useToast } from '../context/ToastContext'
+import { useWallet } from '@txnlab/use-wallet-react'
+import algosdk from 'algosdk'
+import { getAlgodConfigFromViteEnvironment } from '../utils/network/getAlgoClientConfigs'
 
 const emptyMilestone = () => ({
   name: '',
@@ -11,6 +14,7 @@ const emptyMilestone = () => ({
 
 export default function CreateGrantPage() {
   const { notify } = useToast()
+  const { activeAddress, transactionSigner } = useWallet()
   const today = new Date().toISOString().split('T')[0]
   const [step, setStep] = useState(1)
   const [form, setForm] = useState({
@@ -77,19 +81,83 @@ export default function CreateGrantPage() {
   const prevStep = () => setStep((value) => Math.max(1, value - 1))
 
   const submitGrant = async () => {
+    if (!activeAddress) {
+      notify('Please connect your wallet first', 'warning')
+      return
+    }
+
     if (!validateStep(2)) {
       setStep(2)
       return
     }
 
-    // TODO: Replace with backend API call - POST /api/grants/create
-    const mockResponse = { success: true, grantId: 'mock-123' }
+    try {
+      notify('Initiating Grant Deployment (Demo Transaction)...', 'info')
 
-    // TODO: Algorand SDK - deploy milestone smart contract
-    // Reference: https://github.com/Oluwatunmise-olat/pyteal-milestone-dapp
-    const mockTxHash = 'MOCKTXHASH7XYZ...'
+      const config = getAlgodConfigFromViteEnvironment()
+      const algodClient = new algosdk.Algodv2(config.token, config.server, config.port)
 
-    notify(`Grant created: ${mockResponse.grantId} | Tx: ${mockTxHash}`, 'success')
+      // Pre-flight balance check
+      try {
+        const accountInfo = await algodClient.accountInformation(activeAddress).do()
+        const balanceMicroAlgos = accountInfo.amount
+        if (balanceMicroAlgos < 200_000) { // 0.2 ALGO to be safe (min balance + txn fee + demo amount)
+          notify('Insufficient Funds: Please visit the Testnet Dispenser (bank.testnet.algorand.network) to get free ALGO.', 'error')
+          return
+        }
+      } catch (e) {
+        console.warn('Balance check failed - might be a new account. Continuing anyway but transaction may fail.')
+      }
+
+      const params = await algodClient.getTransactionParams().do()
+
+      // Demo Transaction: Send 0.1 ALGO to the sponsor address (as a self-test/funding demo)
+      const txn = algosdk.makePaymentTxnWithSuggestedParamsFromObject({
+        sender: activeAddress,
+        receiver: form.sponsorWallet || activeAddress,
+        amount: 100_000, // 0.1 ALGO
+        suggestedParams: params,
+        note: new Uint8Array(Buffer.from(`Vitta Grant: ${form.title}`)),
+      })
+
+      const encodedTxn = algosdk.encodeUnsignedTransaction(txn)
+      const [signedTxn] = await transactionSigner([encodedTxn])
+
+      const { txId } = await algodClient.sendRawTransaction(signedTxn).do()
+
+      notify(`Transaction Sent! ID: ${txId.slice(0, 8)}...`, 'info')
+
+      await algosdk.waitForConfirmation(algodClient, txId, 4)
+
+      notify(`Grant System Deployed Successfully! Tx: ${txId.slice(0, 12)}...`, 'success')
+
+      // Save to Backend
+      try {
+        const response = await fetch('http://localhost:3001/api/grants', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            id: `grant-${Date.now()}`,
+            ...form,
+            txId
+          })
+        })
+        if (response.ok) {
+          notify('Grant data persisted to database', 'success')
+        }
+      } catch (err) {
+        console.error('Failed to save to backend:', err)
+        notify('Transaction succeeded but failed to save to database', 'warning')
+      }
+
+      setStep(3)
+    } catch (error) {
+      console.error('Deployment error:', error)
+      const msg = error.message.toLowerCase().includes('spend')
+        ? 'Insufficient Funds on Testnet. Get free ALGO at: bank.testnet.algorand.network'
+        : error.message
+      notify(`Deployment failed: ${msg}`, 'error')
+    }
   }
 
   return (

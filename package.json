@@ -1,5 +1,5 @@
 {
-  "name": "OnChain-Counter-frontend",
+  "name": "vitta-project",
   "version": "0.1.0",
   "author": {
     "name": "maroti",
@@ -35,6 +35,9 @@
     "vite-plugin-node-polyfills": "^0.22.0"
   },
   "dependencies": {
+    "express": "^4.18.2",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
     "@algorandfoundation/algokit-utils": "^9.0.0",
     "@blockshake/defly-connect": "^1.2.1",
     "@perawallet/connect": "^1.4.1",

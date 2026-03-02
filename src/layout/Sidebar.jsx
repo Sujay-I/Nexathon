@@ -11,8 +11,8 @@ const items = [
 
 export default function Sidebar() {
   return (
-    <aside className='hidden h-[calc(100vh-73px)] w-64 shrink-0 border-r border-cyan-500/20 bg-slate-900/60 p-4 lg:block'>
-      <div className='mb-4 rounded-lg border border-cyan-500/30 bg-slate-950/70 p-3 font-mono text-xs text-cyan-300'>
+    <aside className='hidden h-[calc(100vh-73px)] w-64 shrink-0 border-r border-blue-500/15 bg-[#060e24]/60 p-4 lg:block'>
+      <div className='mb-4 rounded-lg border border-blue-500/25 bg-[#040a18]/70 p-3 font-mono text-xs text-blue-300'>
         DASHBOARD MODULES
       </div>
       <div className='space-y-1'>
@@ -23,7 +23,7 @@ export default function Sidebar() {
               key={item.to}
               to={item.to}
               className={({ isActive }) =>
-                `flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition ${isActive ? 'bg-cyan-500/20 text-cyan-100' : 'text-slate-300 hover:bg-slate-800'}`
+                `flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition ${isActive ? 'bg-blue-500/20 text-blue-200' : 'text-blue-300/60 hover:bg-blue-500/10 hover:text-blue-200'}`
               }
             >
               <Icon size={16} />

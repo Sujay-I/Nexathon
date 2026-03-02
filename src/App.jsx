@@ -8,6 +8,7 @@ import DashboardPage from './pages/DashboardPage'
 import DaoPage from './pages/DaoPage'
 import AnalyticsPage from './pages/AnalyticsPage'
 import WalletPage from './pages/WalletPage'
+import LoginPage from './pages/LoginPage'
 import NotFoundPage from './pages/NotFoundPage'
 
 export default function App() {
@@ -15,6 +16,7 @@ export default function App() {
     <Routes>
       <Route element={<AppLayout />}>
         <Route path='/' element={<LandingPage />} />
+        <Route path='/login' element={<LoginPage />} />
         <Route path='/grants' element={<GrantsPage />} />
         <Route path='/grants/:id' element={<GrantDetailPage />} />
         <Route path='/create-grant' element={<CreateGrantPage />} />

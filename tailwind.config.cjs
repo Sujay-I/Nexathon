@@ -8,8 +8,8 @@ module.exports = {
         mono: ['JetBrains Mono', 'monospace'],
       },
       boxShadow: {
-        neon: '0 0 25px rgba(34, 211, 238, 0.45)',
-        'neon-sm': '0 0 14px rgba(45, 212, 191, 0.35)',
+        neon: '0 0 25px rgba(59, 130, 246, 0.4)',
+        'neon-sm': '0 0 14px rgba(96, 165, 250, 0.3)',
       },
     },
   },

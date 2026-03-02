@@ -2,6 +2,9 @@ import { Link } from 'react-router-dom'
 import { Eye, Goal, ShieldCheck } from 'lucide-react'
 import { landingStats } from '../data/mockData'
 import { useToast } from '../context/ToastContext'
+import { useWallet } from '@txnlab/use-wallet-react'
+import { useState } from 'react'
+import ConnectWallet from '../components/ConnectWallet'
 
 const features = [
   {
@@ -25,11 +28,17 @@ const flow = ['Create Grant', 'Set Milestones', 'Approve & Release']
 
 export default function LandingPage() {
   const { notify } = useToast()
+  const { activeAddress } = useWallet()
+  const [isModalOpen, setIsModalOpen] = useState(false)
 
-  const connectWallet = () => {
-    // TODO: Replace with backend API call - POST /api/wallet/connect
-    const mockResponse = { success: true, walletAddress: 'MOCKWALLETXYZ123' }
-    notify(`Wallet connect placeholder: ${mockResponse.walletAddress}`, 'info')
+  const toggleModal = () => setIsModalOpen(!isModalOpen)
+
+  const handleConnect = () => {
+    if (activeAddress) {
+      notify(`Wallet already connected: ${activeAddress.slice(0, 10)}...`, 'info')
+    } else {
+      toggleModal()
+    }
   }
 
   return (
@@ -45,8 +54,11 @@ export default function LandingPage() {
               A production-ready grant and fund tracking interface for Algorand. Track every milestone, approval, and release with governance-native transparency.
             </p>
             <div className='flex flex-wrap gap-3'>
-              <button onClick={connectWallet} className='rounded-lg border border-cyan-300/80 bg-cyan-400/10 px-4 py-2 text-cyan-100 transition hover:shadow-neon'>
-                Connect Wallet
+              <button
+                onClick={handleConnect}
+                className='rounded-lg border border-cyan-300/80 bg-cyan-400/10 px-4 py-2 text-cyan-100 transition hover:shadow-neon'
+              >
+                {activeAddress ? 'Connected' : 'Connect Wallet'}
               </button>
               <Link to='/grants' className='rounded-lg border border-slate-700 px-4 py-2 text-slate-200 transition hover:border-cyan-300 hover:text-cyan-200'>
                 Browse Grants
@@ -128,6 +140,7 @@ export default function LandingPage() {
           </div>
         </div>
       </footer>
+      <ConnectWallet openModal={isModalOpen} closeModal={toggleModal} />
     </div>
   )
 }
